@@ -3,12 +3,14 @@
 # ============================================
 # Trading Pipeline - Comprehensive CLI Test
 # ============================================
-# Just run: ./test.sh
+# Run from project root: ./scripts/test.sh
 # ============================================
 
 # Config
 BASE_URL="http://localhost:8080"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+SERVER_DIR="$PROJECT_DIR/server"
 SERVER_PID=""
 REFRESH_RATE=1
 SAMPLES_TO_SHOW=15
@@ -41,16 +43,16 @@ start_server() {
     fi
 
     echo -e "${YELLOW}Starting server...${NC}"
-    cd "$SCRIPT_DIR"
 
     # Build if needed
-    if [ ! -f "./trading-pipeline" ] || [ ! -f "./libprocess.so" ]; then
+    if [ ! -f "$SERVER_DIR/trading-pipeline" ] || [ ! -f "$SERVER_DIR/libprocess.so" ]; then
         echo -e "${YELLOW}Building project...${NC}"
-        make > /dev/null 2>&1
+        cd "$PROJECT_DIR" && make build-server > /dev/null 2>&1
     fi
 
     # Start server in background
-    LD_LIBRARY_PATH="$SCRIPT_DIR" ./trading-pipeline > /dev/null 2>&1 &
+    cd "$SERVER_DIR"
+    LD_LIBRARY_PATH="$SERVER_DIR" ./trading-pipeline > /dev/null 2>&1 &
     SERVER_PID=$!
 
     # Wait for server to be ready

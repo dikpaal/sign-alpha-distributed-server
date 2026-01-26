@@ -1,0 +1,11 @@
+# Build artifacts
+server/libprocess.so
+server/trading-pipeline
+tui/tui-client
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
