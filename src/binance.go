@@ -20,9 +20,9 @@ type PriceUpdate struct {
 	Time  time.Time
 }
 
-// ConnectBinance connects to Binance WebSocket and streams BTC prices
-func ConnectBinance(priceChan chan<- PriceUpdate) {
-	url := "wss://stream.binance.com:9443/ws/btcusdt@trade"
+// ConnectBinance connects to Binance WebSocket and streams prices for the given symbol
+func ConnectBinance(symbol string, priceChan chan<- PriceUpdate) {
+	url := "wss://stream.binance.com:9443/ws/" + symbol + "@trade"
 
 	for {
 		conn, _, err := websocket.DefaultDialer.Dial(url, nil)

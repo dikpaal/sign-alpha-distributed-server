@@ -1,12 +1,22 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 )
 
 func main() {
-	log.Println("Starting Trading Pipeline...")
+	// Run TUI to select coin
+	symbol, err := RunTUI()
+	if err != nil {
+		fmt.Println("Cancelled.")
+		os.Exit(0)
+	}
+
+	coinName := GetCoinName(symbol)
+	fmt.Printf("\nStarting Trading Pipeline for %s...\n\n", coinName)
 
 	// Create server
 	server := NewServer()
@@ -15,7 +25,7 @@ func main() {
 	priceChan := make(chan PriceUpdate, 100)
 
 	// Start Binance WebSocket connection in background
-	go ConnectBinance(priceChan)
+	go ConnectBinance(symbol, priceChan)
 
 	// Process incoming prices
 	go func() {
@@ -30,9 +40,10 @@ func main() {
 	http.HandleFunc("/ws", server.HandleWebSocket)
 
 	// Start HTTP server
+	log.Printf("Tracking: %s", coinName)
 	log.Println("Server running on http://localhost:8080")
 	log.Println("Endpoints:")
-	log.Println("  GET  /api/price  - Current BTC price")
+	log.Printf("  GET  /api/price  - Current %s price", symbol[:len(symbol)-4])
 	log.Println("  GET  /api/stats  - Moving average, high, low")
 	log.Println("  WS   /ws         - Real-time price stream")
 
