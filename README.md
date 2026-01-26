@@ -4,7 +4,6 @@ A real-time data acquisition pipeline that streams cryptocurrency market data fr
 
 ## Demo
 
-<!-- Add your demo GIF or video here -->
 ![Demo](demo.gif)
 
 ## Features
