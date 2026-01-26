@@ -75,14 +75,14 @@ TRADING-PIPELINE/
 **Server:**
 | Package | Version | Purpose |
 |---------|---------|---------|
-| `github.com/gorilla/websocket` | v1.5.3 | WebSocket client (Binance) and server |
+| `gorilla/websocket` | v1.5.3 | WebSocket client (Binance) and server |
 | Standard library (`net/http`, `sync`, `encoding/json`) | - | HTTP server, thread safety, JSON encoding |
 
 **TUI Client:**
 | Package | Version | Purpose |
 |---------|---------|---------|
-| `github.com/charmbracelet/bubbletea` | v1.3.10 | Terminal UI framework (Elm architecture) |
-| `github.com/charmbracelet/lipgloss` | v1.1.0 | Terminal styling and colors |
+| `bubbletea` | v1.3.10 | Terminal UI framework (Elm architecture) |
+| `lipgloss` | v1.1.0 | Terminal styling and colors |
 
 ### C++ Libraries
 | Library | Purpose |
