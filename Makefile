@@ -1,9 +1,9 @@
-.PHONY: all build clean run tui test docker docker-run docker-stop
+.PHONY: all build clean run tui test docker docker-run docker-stop services
 
 # Default target
 all: build
 
-# Build both server and TUI
+# Build monolithic server and TUI (for local dev without Docker)
 build: build-server build-tui
 
 # Build server with C++ library
@@ -17,7 +17,7 @@ build-tui:
 	@echo "Building TUI client..."
 	cd tui && go build -o tui-client .
 
-# Run the server
+# Run the monolithic server (for local dev)
 run: build-server
 	@echo "Starting server..."
 	cd server && LD_LIBRARY_PATH=. ./trading-pipeline
@@ -36,18 +36,41 @@ test: build
 clean:
 	rm -f server/libprocess.so server/trading-pipeline
 	rm -f tui/tui-client
+	rm -f services/processing/libprocess.so
 
-# Docker commands
-docker:
-	@echo "Building Docker image..."
-	docker build -t trading-pipeline .
+# Build all microservices Docker images
+services:
+	@echo "Building microservices..."
+	docker-compose build
 
-docker-run: docker
-	@echo "Starting container..."
+# Run full distributed system with Docker
+docker-run:
+	@echo "Starting distributed pipeline..."
 	docker-compose up -d
-	@echo "Server running at http://localhost:8080"
-	@echo "Run 'make tui' to connect"
+	@echo ""
+	@echo "Services running:"
+	@echo "  - TimescaleDB: localhost:5432"
+	@echo "  - NATS:        localhost:4222 (monitoring: localhost:8222)"
+	@echo "  - API:         localhost:8080"
+	@echo ""
+	@echo "Run 'make tui' to view dashboard"
+	@echo "Run 'make logs' to view service logs"
 
+# Stop all containers
 docker-stop:
-	@echo "Stopping container..."
+	@echo "Stopping containers..."
 	docker-compose down
+
+# View logs
+logs:
+	docker-compose logs -f
+
+# View specific service logs
+logs-ingestion:
+	docker-compose logs -f ingestion
+
+logs-processing:
+	docker-compose logs -f processing
+
+logs-api:
+	docker-compose logs -f api

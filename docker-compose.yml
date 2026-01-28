@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: trading123
       POSTGRES_DB: trading_pipeline
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - timescale_data:/var/lib/postgresql/data
     healthcheck:
@@ -15,13 +15,54 @@ services:
       timeout: 5s
       retries: 5
 
-  server:
-    build: .
+  nats:
+    image: nats:latest
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    command: ["--http_port", "8222"]
+    healthcheck:
+      test: ["CMD", "nats-server", "--help"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  ingestion:
+    build:
+      context: .
+      dockerfile: services/ingestion/Dockerfile
+    environment:
+      NATS_URL: nats://nats:4222
+      SYMBOL: btcusdt
+    depends_on:
+      nats:
+        condition: service_healthy
+    restart: unless-stopped
+
+  processing:
+    build:
+      context: .
+      dockerfile: services/processing/Dockerfile
+    environment:
+      NATS_URL: nats://nats:4222
+    depends_on:
+      nats:
+        condition: service_healthy
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
     ports:
       - "8080:8080"
     environment:
+      NATS_URL: nats://nats:4222
       DATABASE_URL: postgres://trading:trading123@timescaledb:5432/trading_pipeline?sslmode=disable
     depends_on:
+      nats:
+        condition: service_healthy
       timescaledb:
         condition: service_healthy
     restart: unless-stopped
