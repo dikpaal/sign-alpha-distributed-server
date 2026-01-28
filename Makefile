@@ -1,67 +1,39 @@
-.PHONY: all build clean run tui test docker docker-run docker-stop services
+.PHONY: all build run tui stop logs clean
 
-# Default target
-all: build
+# Default target - build and run
+all: run
 
-# Build monolithic server and TUI (for local dev without Docker)
-build: build-server build-tui
-
-# Build server with C++ library
-build-server:
-	@echo "Building server..."
-	cd server && g++ -shared -fPIC -o libprocess.so process.cpp -lpthread
-	cd server && CGO_ENABLED=1 go build -o trading-pipeline .
-
-# Build TUI client
-build-tui:
-	@echo "Building TUI client..."
-	cd tui && go build -o tui-client .
-
-# Run the monolithic server (for local dev)
-run: build-server
-	@echo "Starting server..."
-	cd server && LD_LIBRARY_PATH=. ./trading-pipeline
-
-# Run the TUI client
-tui: build-tui
-	@echo "Starting TUI..."
-	cd tui && ./tui-client
-
-# Run test script
-test: build
-	@echo "Running tests..."
-	cd server && LD_LIBRARY_PATH=. ../scripts/test.sh
-
-# Clean build artifacts
-clean:
-	rm -f server/libprocess.so server/trading-pipeline
-	rm -f tui/tui-client
-	rm -f services/processing/libprocess.so
-
-# Build all microservices Docker images
-services:
+# Build all microservices
+build:
 	@echo "Building microservices..."
 	docker-compose build
 
-# Run full distributed system with Docker
-docker-run:
+# Start the distributed pipeline
+run:
 	@echo "Starting distributed pipeline..."
 	docker-compose up -d
 	@echo ""
 	@echo "Services running:"
-	@echo "  - TimescaleDB: localhost:5432"
+	@echo "  - TimescaleDB: localhost:5433"
 	@echo "  - NATS:        localhost:4222 (monitoring: localhost:8222)"
 	@echo "  - API:         localhost:8080"
 	@echo ""
 	@echo "Run 'make tui' to view dashboard"
 	@echo "Run 'make logs' to view service logs"
 
+# Build and run TUI client
+tui:
+	@echo "Building TUI client..."
+	cd tui && go build -o tui-client .
+	@echo "Starting TUI..."
+	cd tui && ./tui-client
+
 # Stop all containers
-docker-stop:
+stop:
 	@echo "Stopping containers..."
 	docker-compose down
 
-# View logs
+# View all service logs
 logs:
 	docker-compose logs -f
 
@@ -74,3 +46,9 @@ logs-processing:
 
 logs-api:
 	docker-compose logs -f api
+
+# Clean build artifacts
+clean:
+	rm -f tui/tui-client
+	rm -f services/processing/libprocess.so
+	docker-compose down --rmi local 2>/dev/null || true
