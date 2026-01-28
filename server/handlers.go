@@ -21,12 +21,16 @@ type Server struct {
 	currentPrice float64
 	clients      map[*websocket.Conn]bool
 	clientsMu    sync.RWMutex
+	db           *DB
+	appState     *AppState
 }
 
 // NewServer creates a new server instance
-func NewServer() *Server {
+func NewServer(db *DB, appState *AppState) *Server {
 	return &Server{
-		clients: make(map[*websocket.Conn]bool),
+		clients:  make(map[*websocket.Conn]bool),
+		db:       db,
+		appState: appState,
 	}
 }
 
@@ -39,6 +43,15 @@ func (s *Server) UpdatePrice(price float64) {
 
 	// Send to C++ processor
 	C.add_price(C.double(price))
+
+	// Write to database if available
+	if s.db != nil && s.appState != nil {
+		go func() {
+			if err := s.db.InsertTrade(s.appState.GetSymbol(), price); err != nil {
+				log.Printf("DB write error: %v", err)
+			}
+		}()
+	}
 
 	// Broadcast to all WebSocket clients
 	s.broadcast(price)
@@ -128,6 +141,24 @@ func (s *Server) ResetPrice() {
 	s.mu.Lock()
 	s.currentPrice = 0
 	s.mu.Unlock()
+}
+
+// HandleHistory returns historical trades from the database
+func (s *Server) HandleHistory(w http.ResponseWriter, r *http.Request) {
+	if s.db == nil {
+		http.Error(w, "Database not available", http.StatusServiceUnavailable)
+		return
+	}
+
+	symbol := s.appState.GetSymbol()
+	trades, err := s.db.GetHistory(symbol, 100)
+	if err != nil {
+		http.Error(w, "Failed to fetch history", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(trades)
 }
 
 // C++ wrapper functions for TUI access

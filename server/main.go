@@ -67,14 +67,24 @@ func main() {
 
 	log.Printf("Starting Trading Pipeline Server for %s...\n", coinName)
 
+	// Initialize database
+	db, err := NewDB()
+	if err != nil {
+		log.Printf("Warning: Database not available: %v", err)
+		log.Println("Running without persistence...")
+	} else {
+		log.Println("Connected to TimescaleDB")
+		defer db.Close()
+	}
+
 	// App state
 	appState := &AppState{
 		symbol:   selectedSymbol,
 		coinName: coinName,
 	}
 
-	// Create server
-	server := NewServer()
+	// Create server with database
+	server := NewServer(db, appState)
 
 	// Price channel for Binance updates
 	priceChan := make(chan PriceUpdate, 100)
@@ -93,6 +103,7 @@ func main() {
 	// Setup HTTP routes
 	http.HandleFunc("/api/price", server.HandlePrice)
 	http.HandleFunc("/api/stats", server.HandleStats)
+	http.HandleFunc("/api/history", server.HandleHistory)
 
 	// GET and POST /api/symbol
 	http.HandleFunc("/api/symbol", func(w http.ResponseWriter, r *http.Request) {
@@ -162,6 +173,7 @@ func main() {
 	log.Println("Endpoints:")
 	log.Println("  GET  /api/price   - Current price")
 	log.Println("  GET  /api/stats   - Moving average, high, low")
+	log.Println("  GET  /api/history - Historical trades (from DB)")
 	log.Println("  GET  /api/symbol  - Current symbol info")
 	log.Println("  POST /api/symbol  - Change symbol")
 	log.Println("  GET  /api/coins   - Available coins")
