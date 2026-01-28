@@ -1,4 +1,4 @@
-# Real-Time Crypto Data Ingestion Pipeline
+# Real-Time Crypto Data Pipeline
 
 A real-time data acquisition pipeline that streams cryptocurrency market data from Binance, processes it through a C++ signal processing module, and serves it via a Go HTTP/WebSocket server with a terminal-based dashboard.
 
